@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+body { margin: 0; font-family: Arial; }
+
+/* Floating Button */
+#chat-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #0B5FFF;
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* Chat Box */
+#chat-container {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 360px;
+  height: 520px;
+  background: white;
+  border-radius: 14px;
+  display: none;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* Header */
+#chat-header {
+  background: #0B5FFF;
+  color: white;
+  padding: 12px;
+  font-weight: bold;
+}
+
+/* Body */
+#chat-body {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  background: #f5f7fb;
+}
+
+/* Messages */
+.message { margin: 10px 0; display: flex; }
+.message-content { padding: 10px; border-radius: 10px; max-width: 80%; }
+
+.user { justify-content: flex-end; }
+.user .message-content { background: #0B5FFF; color: white; }
+
+.bot .message-content { background: #e5e7eb; }
+
+/* Footer */
+#chat-footer { display: flex; border-top: 1px solid #ddd; }
+#chat-input { flex: 1; padding: 10px; border: none; }
+#send-btn { background: #0B5FFF; color: white; border: none; padding: 10px; }
+
+button { margin: 4px; padding: 6px 10px; cursor: pointer; }
+</style>
+</head>
+
+<body>
+
+<div id="chat-toggle">💬</div>
+
+<div id="chat-container">
+
+  <div id="chat-header">AccelAssist</div>
+
+  <div id="chat-body">
+    <div class="message bot">
+      <div class="message-content">
+        👋 Hi, I’m AccelAssist<br><br>
+        Try:
+      </div>
+    </div>
+
+    <!-- ✅ QUICK BUTTONS -->
+    <div style="padding:10px;">
+      <button onclick="quickAsk('ADOC overview')">ADOC</button>
+      <button onclick="quickAsk('Cold call script')">Cold Call</button>
+      <button onclick="quickAsk('Sales enablement')">Sales</button>
+    </div>
+
+  </div>
+
+  <div id="chat-footer">
+    <input id="chat-input" placeholder="Ask..." />
+    <button id="send-btn">➤</button>
+  </div>
+
+</div>
+
+<script>
+
+const API_URL = "https://accelassist-bot.onrender.com/chat";
+
+// Toggle
+document.getElementById("chat-toggle").onclick = () => {
+  const box = document.getElementById("chat-container");
+  box.style.display = box.style.display === "flex" ? "none" : "flex";
+};
+
+// Send message
+async function sendMessage() {
+  const input = document.getElementById("chat-input");
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const chat = document.getElementById("chat-body");
+
+  chat.innerHTML += `<div class="message user"><div class="message-content">${msg}</div></div>`;
+  input.value = "";
+
+  chat.innerHTML += `<div class="message bot" id="typing"><div class="message-content">Thinking...</div></div>`;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ message: msg })
+    });
+
+    const data = await res.json();
+    document.getElementById("typing").remove();
+
+    chat.innerHTML += `
+      <div class="message bot">
+        <div class="message-content">${data.response.replace(/\n/g,"<br>")}</div>
+      </div>
+    `;
+
+  } catch (e) {
+    document.getElementById("typing").remove();
+    chat.innerHTML += `<div class="message bot"><div class="message-content">❌ Error</div></div>`;
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ✅ QUICK ASK
+function quickAsk(text) {
+  document.getElementById("chat-input").value = text;
+  sendMessage();
+}
+
+// Events
+document.getElementById("send-btn").onclick = sendMessage;
+document.getElementById("chat-input").addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
+
+</script>
+
+</body>
+</html>
